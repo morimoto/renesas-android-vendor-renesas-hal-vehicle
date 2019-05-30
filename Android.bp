@@ -18,6 +18,7 @@
 cc_binary {
     name: "android.hardware.automotive.vehicle@2.0-service.renesas",
     init_rc: ["android.hardware.automotive.vehicle@2.0-service.renesas.rc"],
+    vintf_fragments: ["android.hardware.automotive.vehicle@2.0-service.renesas.xml"],
     proprietary: true,
     relative_install_path: "hw",
 
