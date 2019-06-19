@@ -16,6 +16,14 @@
 
 #define LOG_TAG "VehicleHalImpl"
 
+#include <iomanip>
+#include <fstream>
+#include <unistd.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+
+#include <errno.h>
 #include <utils/SystemClock.h>
 #include <log/log.h>
 #include <android-base/macros.h>
@@ -37,6 +45,9 @@ typedef struct __attribute__((packed, aligned(2))) vhal_can_msg_s {
     int32_t     propId;
     int32_t     propValue;
 } vhal_can_msg_t;
+
+using StateReq = VehicleApPowerStateReq;
+using Shutdown = VehicleApPowerStateShutdownParam;
 
 VehicleHalImpl::VehicleHalImpl(VehiclePropertyStore* propStore) :
     mPropStore(propStore),
@@ -365,7 +376,19 @@ void VehicleHalImpl::CanRxHandleThread(void)
                 VehiclePropValue &propValue = propValues[i];
                 if (propValue.prop == pmsg->propId) {
                     if (propValue.value.int32Values.size() != 0) {
-                        propValue.value.int32Values[0] = static_cast<int32_t>(pmsg->propValue);
+                        if (pmsg->propId == (int32_t)VehicleProperty::AP_POWER_STATE_REQ) {
+                            propValue.value.int32Values.resize(2);
+                            propValue.value.int32Values[0] = static_cast<int32_t>(pmsg->propValue & 0xFFFF);
+                            propValue.value.int32Values[1] = static_cast<int32_t>(pmsg->propValue >> 16);
+                            if (propValue.value.int32Values[0] == static_cast<int32_t>(StateReq::SHUTDOWN_PREPARE) &&
+                                propValue.value.int32Values[1] == static_cast<int32_t>(Shutdown::CAN_SLEEP)) {
+                                setPmicBackupMode(BackupMode::ON);
+                            } else if (propValue.value.int32Values[0] == static_cast<int32_t>(StateReq::CANCEL_SHUTDOWN)) {
+                                setPmicBackupMode(BackupMode::OFF);
+                            }
+                        } else {
+                            propValue.value.int32Values[0] = static_cast<int32_t>(pmsg->propValue);
+                        }
                     } else if (propValue.value.floatValues.size() != 0){
                         propValue.value.floatValues[0] = (float)pmsg->propValue;
                     } else if (propValue.value.int64Values.size() != 0){
@@ -466,6 +489,19 @@ void VehicleHalImpl::GpioHandleThread(void)
     close(fd);
 
     ALOGD("GpioHandleThread() <-");
+}
+
+void VehicleHalImpl::setPmicBackupMode(BackupMode mode) const
+{
+    std::ofstream backupModeStream;
+    backupModeStream.open(mBackupModeFileName, std::ofstream::out);
+    if (backupModeStream.is_open()) {
+        backupModeStream << BackupModeToStr(mode) << std::endl;
+        backupModeStream.close();
+        ALOGD("PMIC Backup Mode : %s", BackupModeToStr(mode));
+    } else {
+        ALOGE("PMIC configuration failed!");
+    }
 }
 
 }  // namespace renesas

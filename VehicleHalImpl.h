@@ -71,6 +71,18 @@ private:
     void onContinuousPropertyTimer(const std::vector<int32_t>& properties);
     bool isContinuousProperty(int32_t propId) const;
 
+    enum class BackupMode { ON, OFF};
+    constexpr const char* BackupModeToStr(BackupMode mode) const {
+        switch (mode) {
+            case BackupMode::ON:
+                return "on";
+            case BackupMode::OFF:
+                return "off";
+        }
+    }
+    void setPmicBackupMode(BackupMode mode) const;
+    const std::string mBackupModeFileName = "/sys/bus/platform/devices/bd9571mwv-regulator/backup_mode";
+
     VehiclePropertyStore*           mPropStore;
     std::unordered_set<int32_t>     mHvacPowerProps;
     RecurrentTimer                  mRecurrentTimer;
