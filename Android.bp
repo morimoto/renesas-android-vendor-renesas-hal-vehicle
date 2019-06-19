@@ -15,8 +15,29 @@
 //#######################################################################
 // Vehicle HAL service
 
+bootstrap_go_package {
+    name: "soong-vehicle_hal_defaults",
+    pkgPath: "android/soong/vendor/renesas/hal/vehicle/defaults",
+    deps: [
+        "soong",
+        "soong-android",
+        "soong-cc"
+    ],
+    srcs: [
+        "vehicle_hal_defaults.go"
+    ],
+    pluginFor: ["soong_build"],
+}
+
+vehicle_hal_defaults {
+    name: "vehicle_hal_defaults-instance",
+}
+
 cc_binary {
     name: "android.hardware.automotive.vehicle@2.0-service.renesas",
+    defaults: [
+        "vehicle_hal_defaults-instance"
+    ],
     init_rc: ["android.hardware.automotive.vehicle@2.0-service.renesas.rc"],
     vintf_fragments: ["android.hardware.automotive.vehicle@2.0-service.renesas.xml"],
     proprietary: true,

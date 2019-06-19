@@ -380,12 +380,14 @@ void VehicleHalImpl::CanRxHandleThread(void)
                             propValue.value.int32Values.resize(2);
                             propValue.value.int32Values[0] = static_cast<int32_t>(pmsg->propValue & 0xFFFF);
                             propValue.value.int32Values[1] = static_cast<int32_t>(pmsg->propValue >> 16);
+#ifdef TARGET_PRODUCT_SALVATOR
                             if (propValue.value.int32Values[0] == static_cast<int32_t>(StateReq::SHUTDOWN_PREPARE) &&
                                 propValue.value.int32Values[1] == static_cast<int32_t>(Shutdown::CAN_SLEEP)) {
                                 setPmicBackupMode(BackupMode::ON);
                             } else if (propValue.value.int32Values[0] == static_cast<int32_t>(StateReq::CANCEL_SHUTDOWN)) {
                                 setPmicBackupMode(BackupMode::OFF);
                             }
+#endif // TARGET_PRODUCT_SALVATOR
                         } else {
                             propValue.value.int32Values[0] = static_cast<int32_t>(pmsg->propValue);
                         }
@@ -491,6 +493,7 @@ void VehicleHalImpl::GpioHandleThread(void)
     ALOGD("GpioHandleThread() <-");
 }
 
+#ifdef TARGET_PRODUCT_SALVATOR
 void VehicleHalImpl::setPmicBackupMode(BackupMode mode) const
 {
     std::ofstream backupModeStream;
@@ -503,6 +506,7 @@ void VehicleHalImpl::setPmicBackupMode(BackupMode mode) const
         ALOGE("PMIC configuration failed!");
     }
 }
+#endif // TARGET_PRODUCT_SALVATOR
 
 }  // namespace renesas
 }  // namespace V2_0
