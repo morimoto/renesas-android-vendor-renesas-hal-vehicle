@@ -55,6 +55,9 @@ constexpr int ALL_WHEELS =
           VehicleAreaWheel::LEFT_REAR | VehicleAreaWheel::RIGHT_REAR);
 constexpr int SEAT_1_LEFT = (int)(VehicleAreaSeat::ROW_1_LEFT);
 constexpr int SEAT_1_RIGHT = (int)(VehicleAreaSeat::ROW_1_RIGHT);
+constexpr int SEAT_2_LEFT = (int)(VehicleAreaSeat::ROW_2_LEFT);
+constexpr int SEAT_2_RIGHT = (int)(VehicleAreaSeat::ROW_2_RIGHT);
+constexpr int SEAT_2_CENTER = (int)(VehicleAreaSeat::ROW_2_CENTER);
 
 constexpr int HVAC_LEFT = (int)(VehicleAreaSeat::ROW_1_LEFT | VehicleAreaSeat::ROW_2_LEFT |
                                 VehicleAreaSeat::ROW_2_CENTER);
@@ -904,6 +907,210 @@ const ConfigDeclaration kVehicleProperties[]{
             .areaConfigs = {VehicleAreaConfig{.areaId = (0)}},
         },
         .initialValue = {.int32Values = {LIGHT_SWITCH_AUTO}}
+    },
+    //since Android Q
+    {
+        .config =
+        {
+            .prop = toInt(VehicleProperty::CABIN_LIGHTS_STATE),
+            .access = VehiclePropertyAccess::READ,
+            .changeMode = VehiclePropertyChangeMode::ON_CHANGE,
+            .areaConfigs = {VehicleAreaConfig{.areaId = (0)}},
+        },
+        .initialValue = {.int32Values = {LIGHT_STATE_ON}}
+    },
+    {
+        .config =
+        {
+            .prop = toInt(VehicleProperty::CABIN_LIGHTS_SWITCH),
+            .access = VehiclePropertyAccess::READ_WRITE,
+            .changeMode = VehiclePropertyChangeMode::ON_CHANGE,
+            .areaConfigs = {VehicleAreaConfig{.areaId = (0)}},
+        },
+        .initialValue = {.int32Values = {LIGHT_SWITCH_AUTO}}
+    },
+    {
+        .config =
+        {
+            .prop = toInt(VehicleProperty::READING_LIGHTS_STATE),
+            .access = VehiclePropertyAccess::READ,
+            .changeMode = VehiclePropertyChangeMode::ON_CHANGE,
+            .areaConfigs =
+            {
+                VehicleAreaConfig{
+                    .areaId = SEAT_1_LEFT,
+                },
+                VehicleAreaConfig{
+                    .areaId = SEAT_1_RIGHT,
+                },
+                VehicleAreaConfig{
+                    .areaId = SEAT_2_LEFT,
+                },
+                VehicleAreaConfig{
+                    .areaId = SEAT_2_RIGHT,
+                },
+                VehicleAreaConfig{
+                    .areaId = SEAT_2_CENTER,
+                }
+            }
+        },
+        .initialAreaValues =
+        {
+            {
+                SEAT_1_LEFT,
+                {
+                    .int32Values = {LIGHT_STATE_ON}
+                }
+            },
+            {
+                SEAT_1_RIGHT,
+                {
+                    .int32Values = {LIGHT_STATE_ON}
+                }
+            },
+            {
+                SEAT_2_LEFT,
+                {
+                    .int32Values = {LIGHT_STATE_ON}
+                }
+            },
+            {
+                SEAT_2_RIGHT,
+                {
+                    .int32Values = {LIGHT_STATE_ON}
+                }
+            },
+            {
+                SEAT_2_CENTER,
+                {
+                    .int32Values = {LIGHT_STATE_ON}
+                }
+            }
+        }
+    },
+    {
+        .config =
+        {
+            .prop = toInt(VehicleProperty::READING_LIGHTS_SWITCH),
+            .access = VehiclePropertyAccess::READ_WRITE,
+            .changeMode = VehiclePropertyChangeMode::ON_CHANGE,
+            .areaConfigs =
+            {
+                VehicleAreaConfig{
+                    .areaId = SEAT_1_LEFT,
+                },
+                VehicleAreaConfig{
+                    .areaId = SEAT_1_RIGHT,
+                },
+                VehicleAreaConfig{
+                    .areaId = SEAT_2_LEFT,
+                },
+                VehicleAreaConfig{
+                    .areaId = SEAT_2_RIGHT,
+                },
+                VehicleAreaConfig{
+                    .areaId = SEAT_2_CENTER,
+                }
+            }
+        },
+        .initialAreaValues =
+        {
+            {
+                SEAT_1_LEFT,
+                {
+                    .int32Values = {LIGHT_SWITCH_AUTO}
+                }
+            },
+            {
+                SEAT_1_RIGHT,
+                {
+                    .int32Values = {LIGHT_SWITCH_AUTO}
+                }
+            },
+            {
+                SEAT_2_LEFT,
+                {
+                    .int32Values = {LIGHT_SWITCH_AUTO}
+                }
+            },
+            {
+                SEAT_2_RIGHT,
+                {
+                    .int32Values = {LIGHT_SWITCH_AUTO}
+                }
+            },
+            {
+                SEAT_2_CENTER,
+                {
+                    .int32Values = {LIGHT_SWITCH_AUTO}
+                }
+            }
+        }
+    },
+    {
+        .config =
+        {
+            .prop = toInt(VehicleProperty::DISTANCE_DISPLAY_UNITS),
+            .access = VehiclePropertyAccess::READ_WRITE,
+            .changeMode = VehiclePropertyChangeMode::ON_CHANGE,
+            .areaConfigs = {VehicleAreaConfig{.areaId = (0)}},
+            .configArray = {0, 0, 0}
+        },
+        .initialValue = {.int32Values = {0}}
+    },
+    {
+        .config =
+        {
+            .prop = toInt(VehicleProperty::FUEL_VOLUME_DISPLAY_UNITS),
+            .access = VehiclePropertyAccess::READ_WRITE,
+            .changeMode = VehiclePropertyChangeMode::ON_CHANGE,
+            .areaConfigs = {VehicleAreaConfig{.areaId = (0)}},
+            .configArray = {0, 0, 0}
+        },
+        .initialValue = {.int32Values = {0}}
+    },
+    {
+        .config =
+        {
+            .prop = toInt(VehicleProperty::TIRE_PRESSURE_DISPLAY_UNITS),
+            .access = VehiclePropertyAccess::READ_WRITE,
+            .changeMode = VehiclePropertyChangeMode::ON_CHANGE,
+            .areaConfigs = {VehicleAreaConfig{.areaId = (0)}},
+            .configArray = {0, 0, 0}
+        },
+        .initialValue = {.int32Values = {0}}
+    },
+    {
+        .config =
+        {
+            .prop = toInt(VehicleProperty::EV_BATTERY_DISPLAY_UNITS),
+            .access = VehiclePropertyAccess::READ_WRITE,
+            .changeMode = VehiclePropertyChangeMode::ON_CHANGE,
+            .areaConfigs = {VehicleAreaConfig{.areaId = (0)}},
+            .configArray = {0, 0, 0}
+        },
+        .initialValue = {.int32Values = {0}}
+    },
+    {
+        .config =
+        {
+            .prop = toInt(VehicleProperty::FUEL_CONSUMPTION_UNITS_DISTANCE_OVER_VOLUME),
+            .access = VehiclePropertyAccess::READ_WRITE,
+            .changeMode = VehiclePropertyChangeMode::ON_CHANGE,
+            .areaConfigs = {VehicleAreaConfig{.areaId = (0)}},
+        },
+        .initialValue = {.int32Values = {0}}
+    },
+    {
+        .config =
+        {
+            .prop = toInt(VehicleProperty::VEHICLE_SPEED_DISPLAY_UNITS),
+            .access = VehiclePropertyAccess::READ_WRITE,
+            .changeMode = VehiclePropertyChangeMode::ON_CHANGE,
+            .areaConfigs = {VehicleAreaConfig{.areaId = (0)}},
+            .configArray = {0, 0, 0}
+        },
+        .initialValue = {.int32Values = {0}}
     },
     {
         .config =
