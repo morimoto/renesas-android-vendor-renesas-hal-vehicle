@@ -167,7 +167,7 @@ VehicleHal::VehiclePropValuePtr VehicleHalImpl::get(const VehiclePropValue& requ
         propValuePtr = getValuePool()->obtain(*internalPropValue);
     }
 
-    ALOGI("..get 0x%08x", requestedPropValue.prop);
+    ALOGV("..get 0x%08x", requestedPropValue.prop);
 
     *outStatus = (propValuePtr != nullptr) ? StatusCode::OK : StatusCode::INVALID_ARG;
     return propValuePtr;
