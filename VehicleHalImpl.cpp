@@ -422,11 +422,22 @@ void VehicleHalImpl::GpioHandleThread(void)
     }
 
     ALOGD("GpioHandleThread() ->");
-    int fd = open("/dev/input/event0", O_RDONLY);
+
+    constexpr size_t maxRetry {12};
+    std::chrono::milliseconds timeout {1};
+    int fd = -1;
+    for (size_t i = 0; i < maxRetry && fd < 0 && !mGpioThreadExit; ++i) {
+        fd = open("/dev/input/event0", O_RDONLY);
+        if (fd < 0) {
+            ALOGW("Could not open input event device, attempt %zu, error: %s.", i, strerror(errno));
+            std::this_thread::sleep_for(timeout);
+            timeout *= 2;
+        }
+    }
     if (fd < 0) {
-        ALOGE("Could not open input event device, error: %s\n", strerror(errno));
+        ALOGE("Could not open input event device, after %zu retry. Exit from GPIO thread.", maxRetry);
         return;
-    };
+    }
 
     unsigned char key_bitmask[SIZEOF_BIT_ARRAY(KEY_MAX + 1)];
     std::memset(key_bitmask, 0, sizeof(key_bitmask));
