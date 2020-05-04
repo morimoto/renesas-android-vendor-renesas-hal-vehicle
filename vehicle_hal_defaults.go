@@ -23,12 +23,9 @@ import (
 
 func globalFlags(ctx android.BaseContext) []string {
     var cflags []string
-
-    if ctx.AConfig().Getenv("TARGET_PRODUCT") == "salvator" {
-        cflags = append(cflags, "-DTARGET_PRODUCT_SALVATOR=1")
-    } else if ctx.AConfig().Getenv("TARGET_PRODUCT") == "kingfisher" {
-        cflags = append(cflags, "-DTARGET_PRODUCT_KINGFISHER=1")
-    }
+    var target_product string
+    target_product = "TARGET_PRODUCT"
+    cflags = append(cflags, "-D" + target_product + "=" + ctx.AConfig().Getenv(target_product))
 
     return cflags
 }
