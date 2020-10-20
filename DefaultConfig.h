@@ -1258,6 +1258,41 @@ const ConfigDeclaration kVehicleProperties[]{
         },
         .initialValue = {.stringValue = "Vendor String Property"}
     },
+    {
+        .config = {
+            .prop = toInt(VehicleProperty::INITIAL_USER_INFO),
+            .access = VehiclePropertyAccess::READ_WRITE,
+            .changeMode = VehiclePropertyChangeMode::ON_CHANGE,
+        },
+    },
+    {
+        .config = {
+            .prop = toInt(VehicleProperty::SWITCH_USER),
+            .access = VehiclePropertyAccess::READ_WRITE,
+            .changeMode = VehiclePropertyChangeMode::ON_CHANGE,
+        },
+    },
+    {
+        .config = {
+            .prop = toInt(VehicleProperty::CREATE_USER),
+            .access = VehiclePropertyAccess::READ_WRITE,
+            .changeMode = VehiclePropertyChangeMode::ON_CHANGE,
+        },
+    },
+    {
+        .config = {
+            .prop = toInt(VehicleProperty::REMOVE_USER),
+            .access = VehiclePropertyAccess::READ,
+            .changeMode = VehiclePropertyChangeMode::ON_CHANGE,
+        },
+    },
+    {
+        .config = {
+            .prop = toInt(VehicleProperty::USER_IDENTIFICATION_ASSOCIATION),
+            .access = VehiclePropertyAccess::READ_WRITE,
+            .changeMode = VehiclePropertyChangeMode::ON_CHANGE,
+        },
+    },
 };
 
 }  // namespace renesas

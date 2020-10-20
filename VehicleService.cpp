@@ -24,6 +24,7 @@
 #include <hidl/HidlTransportSupport.h>
 #include <vhal_v2_0/VehicleHalManager.h>
 
+#include "UserHalImpl.h"
 #include "VehicleHalImpl.h"
 
 using namespace android;
@@ -32,7 +33,9 @@ using namespace android::hardware::automotive::vehicle::V2_0;
 
 int main(int /* argc */, char* /* argv */ []) {
     auto store = std::make_unique<VehiclePropertyStore>();
-    auto hal = std::make_unique<renesas::VehicleHalImpl>(store.get());
+    auto userHal = std::make_unique<renesas::UserHal>();
+    auto hal = std::make_unique<renesas::VehicleHalImpl>(store.get(),
+                                                         userHal.get());
     auto service = std::make_unique<VehicleHalManager>(hal.get());
 
     configureRpcThreadpool(4, true /* callerWillJoin */);

@@ -49,7 +49,8 @@ typedef struct __attribute__((packed, aligned(2))) vhal_can_msg_s {
 using StateReq = VehicleApPowerStateReq;
 using Shutdown = VehicleApPowerStateShutdownParam;
 
-VehicleHalImpl::VehicleHalImpl(VehiclePropertyStore* propStore) :
+VehicleHalImpl::VehicleHalImpl(VehiclePropertyStore* propStore, UserHal* userHal) :
+    mUserHal(userHal),
     mPropStore(propStore),
     mHvacPowerProps(std::begin(kHvacPowerProperties), std::end(kHvacPowerProperties)),
     mRecurrentTimer(std::bind(&VehicleHalImpl::onContinuousPropertyTimer,
@@ -168,14 +169,31 @@ std::vector<VehiclePropConfig> VehicleHalImpl::listProperties(void)
     return mPropStore->getAllConfigs();
 }
 
-VehicleHal::VehiclePropValuePtr VehicleHalImpl::get(const VehiclePropValue& requestedPropValue,
-                            StatusCode* outStatus)
+VehicleHal::VehiclePropValuePtr
+VehicleHalImpl::get(const VehiclePropValue& requestedPropValue, StatusCode* outStatus)
 {
-    VehiclePropValuePtr propValuePtr = nullptr;
+    ALOGD("..get PropValue: %s", toString(requestedPropValue).c_str());
+    VehiclePropValuePtr propValuePtr = {nullptr};
 
-    auto internalPropValue = mPropStore->readValueOrNull(requestedPropValue);
-    if (internalPropValue != nullptr) {
-        propValuePtr = getValuePool()->obtain(*internalPropValue);
+    if (mUserHal->isSupported(static_cast<int32_t>(requestedPropValue.prop))) {
+        auto ret = mUserHal->onGetProperty(requestedPropValue);
+
+        if (!ret.ok()) {
+            ALOGE("onGetProperty(): HAL returned error: %s", ret.error().message().c_str());
+            *outStatus = StatusCode(ret.error().code());
+        } else if (ret.value() != nullptr) {
+            auto response = ret.value().get();
+
+            ALOGI("onGetProperty(): property returned by HAL: %s",
+                  toString(*response).c_str());
+            propValuePtr = getValuePool()->obtain(*response);
+        }
+    } else {
+        auto internalPropValue = mPropStore->readValueOrNull(requestedPropValue);
+
+        if (internalPropValue != nullptr) {
+            propValuePtr = getValuePool()->obtain(*internalPropValue);
+        }
     }
 
     ALOGV("..get 0x%08x", requestedPropValue.prop);
@@ -184,22 +202,30 @@ VehicleHal::VehiclePropValuePtr VehicleHalImpl::get(const VehiclePropValue& requ
     return propValuePtr;
 }
 
-StatusCode VehicleHalImpl::set(const VehiclePropValue& propValue)
+StatusCode VehicleHalImpl::updatePropValue(const VehiclePropValue& propValueIn,
+                                           VehiclePropValue& propValueOut,
+                                           bool& isUpdated)
 {
-     if (mHvacPowerProps.count(propValue.prop)) {
-        auto hvacPowerOn = mPropStore->readValueOrNull(toInt(VehicleProperty::HVAC_POWER_ON),
-                                                      toInt(VehicleAreaSeat::ROW_1_CENTER));
+    if (mUserHal->isSupported(static_cast<int32_t>(propValueIn.prop))) {
+        auto ret = mUserHal->onSetProperty(propValueIn);
+        if (!ret.ok()) {
+            ALOGE("onSetProperty(): HAL returned error: %s", ret.error().message().c_str());
+            return StatusCode(ret.error().code());
+        }
 
-        if (hvacPowerOn && hvacPowerOn->value.int32Values.size() == 1
-                && hvacPowerOn->value.int32Values[0] == 0) {
-            return StatusCode::NOT_AVAILABLE;
+        if (ret.value() != nullptr) {
+            propValueOut = *(ret.value().get());
+            isUpdated = true;
+            ALOGI("onSetProperty(): updating property returned by HAL: %s",
+                  toString(propValueOut).c_str());
         }
     }
 
-    if (!mPropStore->writeValue(propValue, true)) {
-        return StatusCode::INVALID_ARG;
-    }
+    return StatusCode::OK;
+}
 
+void VehicleHalImpl::sendCanMsg(const VehiclePropValue& propValue)
+{
     vhal_can_msg_t msg = {propValue.prop, 0};
 
     if (propValue.value.int32Values.size() != 0) {
@@ -213,26 +239,44 @@ StatusCode VehicleHalImpl::set(const VehiclePropValue& propValue)
     }
 
     VehicleHalImpl::CanTxBytes(&msg, sizeof(msg));
+}
 
-    ALOGD("..set 0x%08x areaId=0x%x int32Values=%zu floatValues=%zu int64Values=%zu bytes=%zu string='%s'",
-        propValue.prop,
-        propValue.areaId,
-        propValue.value.int32Values.size(),
-        propValue.value.floatValues.size(),
-        propValue.value.int64Values.size(),
-        propValue.value.bytes.size(),
-        propValue.value.stringValue.c_str());
+StatusCode VehicleHalImpl::set(const VehiclePropValue& propValue)
+{
+    ALOGD("..set PropValue: %s", toString(propValue).c_str());
+    VehiclePropValue updatedPropValue = propValue;
+    bool isUpdated = false;
 
-    for(size_t i = 0; i < propValue.value.int32Values.size(); i++) {
-        ALOGD("int32Values[%zu]=%d", i, propValue.value.int32Values[i]);
-    }
-    for(size_t i = 0; i < propValue.value.floatValues.size(); i++) {
-        ALOGD("floatValues[%zu]=%f", i, propValue.value.floatValues[i]);
-    }
-    for(size_t i = 0; i < propValue.value.int64Values.size(); i++) {
-        ALOGD("int64Values[%zu]=%" PRId64 " ", i, propValue.value.int64Values[i]);
+    if (mHvacPowerProps.count(propValue.prop)) {
+        auto hvacPowerOn = mPropStore->readValueOrNull(toInt(VehicleProperty::HVAC_POWER_ON),
+                                                       toInt(VehicleAreaSeat::ROW_1_CENTER));
+
+        if (hvacPowerOn && hvacPowerOn->value.int32Values.size() == 1
+                && hvacPowerOn->value.int32Values[0] == 0) {
+            return StatusCode::NOT_AVAILABLE;
+        }
     }
 
+    if (auto ret = updatePropValue(propValue, updatedPropValue, isUpdated);
+                                   ret != StatusCode::OK){
+        return ret;
+    }
+
+    if (!mPropStore->writeValue(updatedPropValue, true)) {
+        ALOGW("write value error, propValue: %s", toString(updatedPropValue).c_str());
+        return StatusCode::INVALID_ARG;
+    }
+
+    // respond back to Android if it needed
+    if (isUpdated) {
+        if (getValuePool() != NULL) {
+            doHalEvent(getValuePool()->obtain(updatedPropValue));
+        } else {
+            ALOGW("getValuePool() == NULL: propId: 0x%x", updatedPropValue.prop);
+        }
+    }
+
+    sendCanMsg(updatedPropValue);
     return StatusCode::OK;
 }
 

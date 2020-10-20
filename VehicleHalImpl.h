@@ -37,6 +37,7 @@
 #include <vhal_v2_0/RecurrentTimer.h>
 #include <vhal_v2_0/VehicleHal.h>
 #include <vhal_v2_0/VehiclePropertyStore.h>
+#include "UserHalImpl.h"
 
 constexpr const char* salvator = "salvator";
 constexpr const char* kingfisher = "kingfisher";
@@ -55,9 +56,10 @@ namespace vehicle {
 namespace V2_0 {
 namespace renesas {
 
+using android::hardware::automotive::vehicle::V2_0::renesas::UserHal;
 class VehicleHalImpl : public VehicleHal {
 public:
-    VehicleHalImpl(VehiclePropertyStore* propStore);
+    VehicleHalImpl(VehiclePropertyStore* propStore, UserHal* userHal);
     virtual ~VehicleHalImpl(void);
 
     virtual std::vector<VehiclePropConfig> listProperties() override;
@@ -80,6 +82,10 @@ private:
     void onGpioStateChanged(int fd, unsigned char* const key_bitmask, size_t array_len);
     void onContinuousPropertyTimer(const std::vector<int32_t>& properties);
     bool isContinuousProperty(int32_t propId) const;
+    StatusCode updatePropValue(const VehiclePropValue& propValueIn,
+                               VehiclePropValue& propValueOut,
+                               bool& isUpdated);
+    void sendCanMsg(const VehiclePropValue& propValue);
 
     enum class BackupMode { ON, OFF};
     constexpr const char* BackupModeToStr(BackupMode mode) const {
@@ -93,6 +99,7 @@ private:
     void setPmicBackupMode(BackupMode mode) const;
     const std::string mBackupModeFileName = "/sys/bus/platform/devices/bd9571mwv-regulator/backup_mode";
 
+    UserHal*                        mUserHal = nullptr;
     VehiclePropertyStore*           mPropStore;
     std::unordered_set<int32_t>     mHvacPowerProps;
     RecurrentTimer                  mRecurrentTimer;

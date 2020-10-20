@@ -46,6 +46,7 @@ cc_binary {
     srcs: [
         "VehicleService.cpp",
         "VehicleHalImpl.cpp",
+        "UserHalImpl.cpp",
     ],
 
     shared_libs: [
