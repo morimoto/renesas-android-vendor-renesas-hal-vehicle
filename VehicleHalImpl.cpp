@@ -27,6 +27,7 @@
 #include <utils/SystemClock.h>
 #include <log/log.h>
 #include <android-base/macros.h>
+#include <android-base/properties.h>
 
 #include "VehicleHalImpl.h"
 #include "DefaultConfig.h"
@@ -40,11 +41,6 @@ namespace renesas {
 
 #define SIZEOF_BIT_ARRAY(bits)  ((bits + 7) / 8)
 #define TEST_BIT(bit, array)    (array[bit / 8] & (1 << (bit % 8)))
-
-typedef struct __attribute__((packed, aligned(2))) vhal_can_msg_s {
-    int32_t     propId;
-    int32_t     propValue;
-} vhal_can_msg_t;
 
 using StateReq = VehicleApPowerStateReq;
 using Shutdown = VehicleApPowerStateShutdownParam;
@@ -361,6 +357,28 @@ bool VehicleHalImpl::isContinuousProperty(int32_t propId) const
     return config->changeMode == VehiclePropertyChangeMode::CONTINUOUS;
 }
 
+void VehicleHalImpl::PowerStateReqHandle(VehiclePropValue& propValue,
+                                         vhal_can_msg_t* pmsg) {
+    propValue.value.int32Values.resize(2);
+    propValue.value.int32Values[0] = static_cast<int32_t>(
+        pmsg->propValue & 0xFFFF);
+    propValue.value.int32Values[1] = static_cast<int32_t>(
+        pmsg->propValue >> 16);
+
+    if (android::base::GetProperty(
+        deviceNameProperty, "").compare(salvator) == 0) {
+        if (propValue.value.int32Values[0] == static_cast<int32_t>(
+            StateReq::SHUTDOWN_PREPARE) &&
+            propValue.value.int32Values[1] == static_cast<int32_t>(
+                Shutdown::CAN_SLEEP)) {
+            setPmicBackupMode(BackupMode::ON);
+        } else if (propValue.value.int32Values[0] == static_cast<int32_t>(
+            StateReq::CANCEL_SHUTDOWN)) {
+            setPmicBackupMode(BackupMode::OFF);
+        }
+    }
+}
+
 void VehicleHalImpl::CanRxHandleThread(void)
 {
     if (mCanThreadExit || mSocket == -1) {
@@ -421,15 +439,7 @@ void VehicleHalImpl::CanRxHandleThread(void)
                 if (propValue.prop == pmsg->propId) {
                     if (propValue.value.int32Values.size() != 0) {
                         if (pmsg->propId == (int32_t)VehicleProperty::AP_POWER_STATE_REQ) {
-                            propValue.value.int32Values.resize(2);
-                            propValue.value.int32Values[0] = static_cast<int32_t>(pmsg->propValue & 0xFFFF);
-                            propValue.value.int32Values[1] = static_cast<int32_t>(pmsg->propValue >> 16);
-                            if (propValue.value.int32Values[0] == static_cast<int32_t>(StateReq::SHUTDOWN_PREPARE) &&
-                                propValue.value.int32Values[1] == static_cast<int32_t>(Shutdown::CAN_SLEEP)) {
-                                setPmicBackupMode(BackupMode::ON);
-                            } else if (propValue.value.int32Values[0] == static_cast<int32_t>(StateReq::CANCEL_SHUTDOWN)) {
-                                setPmicBackupMode(BackupMode::OFF);
-                            }
+                            PowerStateReqHandle(propValue, pmsg);
                         } else {
                             propValue.value.int32Values[0] = static_cast<int32_t>(pmsg->propValue);
                         }

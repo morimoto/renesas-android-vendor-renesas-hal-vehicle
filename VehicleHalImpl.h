@@ -39,12 +39,20 @@
 #include <vhal_v2_0/VehiclePropertyStore.h>
 #include "UserHalImpl.h"
 
+const std::string salvator = "salvator";
+const std::string deviceNameProperty = "ro.product.device";
+
 namespace android {
 namespace hardware {
 namespace automotive {
 namespace vehicle {
 namespace V2_0 {
 namespace renesas {
+
+typedef struct __attribute__((packed, aligned(2))) vhal_can_msg_s {
+    int32_t     propId;
+    int32_t     propValue;
+} vhal_can_msg_t;
 
 using android::hardware::automotive::vehicle::V2_0::renesas::UserHal;
 class VehicleHalImpl : public VehicleHal {
@@ -69,6 +77,7 @@ private:
         return std::chrono::nanoseconds(static_cast<int64_t>(1000000000L / hz));
     }
 
+    void PowerStateReqHandle(VehiclePropValue& propValue, vhal_can_msg_t* pmsg);
     void onGpioStateChanged(int fd, unsigned char* const key_bitmask, size_t array_len);
     void onContinuousPropertyTimer(const std::vector<int32_t>& properties);
     bool isContinuousProperty(int32_t propId) const;
