@@ -77,7 +77,6 @@ private:
                                bool& isUpdated);
     void sendCanMsg(const VehiclePropValue& propValue);
 
-#ifdef TARGET_PRODUCT_SALVATOR
     enum class BackupMode { ON, OFF};
     constexpr const char* BackupModeToStr(BackupMode mode) const {
         switch (mode) {
@@ -89,7 +88,6 @@ private:
     }
     void setPmicBackupMode(BackupMode mode) const;
     const std::string mBackupModeFileName = "/sys/bus/platform/devices/bd9571mwv-regulator/backup_mode";
-#endif // TARGET_PRODUCT_SALVATOR
 
     UserHal*                        mUserHal = nullptr;
     VehiclePropertyStore*           mPropStore;
