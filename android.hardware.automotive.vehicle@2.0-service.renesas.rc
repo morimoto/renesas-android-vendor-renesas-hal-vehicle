@@ -3,6 +3,7 @@ service vendor.vehicle-hal-2.0 /vendor/bin/hw/android.hardware.automotive.vehicl
     user vehicle_network
     group system inet input
     disabled # will start explicitly, when binders became ready
+    shutdown critical
 
 on coldboot_done
     start vendor.vehicle-hal-2.0
